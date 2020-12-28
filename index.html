@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Interpolation Experiment</title>
+    <style type="text/css">
+        html, body, canvas {
+            background: #333;
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+        }
+
+        canvas {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="drawStrokedLines = !drawStrokedLines">Draw stroked lines</button>
+    <button onclick="drawCalculatedLines = !drawCalculatedLines">Draw calculated lines (CPU expensive)</button>
+    <p>Use the Arrow Keys to move to the left or the right and jump.</p>
+    <canvas width="640" height="360"></canvas>
+    <script type="text/javascript">
+        var canvas = document.querySelector('canvas');
+        var context = canvas.getContext('2d');
+
+        var drawStrokedLines = true;
+        var drawCalculatedLines = false;
+
+        // Rect:
+        var rect = {
+            x: Math.round(canvas.width / 2),
+            y: 0,
+            size: 32,
+            color: 'blue',
+            gravity: 10,
+            jumpForce: 20,
+            speed: 5,
+            jumping: false,
+            movingLeft: false,
+            movingRight: false
+        };
+
+        var coords = [
+            {
+                x: 40,
+                y: 182
+            },
+            {
+                x: 166,
+                y: 124
+            },
+            {
+                x: 237,
+                y: 158
+            },
+            {
+                x: 310,
+                y: 137
+            },
+            {
+                x: 350,
+                y: 237
+            },
+            {
+                x: 433,
+                y: 238
+            },
+            {
+                x: 480,
+                y: 95
+            },
+            {
+                x: 510,
+                y: 90
+            }
+        ];
+
+        function calcY (x1, y1, x2, y2, x) {
+            var xl = Math.abs(x2 - x1); // x length
+            var yl = Math.abs(y2 - y1); // y length
+            var xDistance = Math.abs(x - x1); // x distance
+
+            //    xl        = yl
+            // -> xDistance = ?
+            // -> (xDistance * yl) / xl
+
+            var yDistance = (xDistance * yl) / xl;
+
+            return y2 >= y1 ? y1 + yDistance : y1 - yDistance;
+        }
+
+        function update () {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Stroked lines:
+            if (drawStrokedLines) {
+                context.beginPath();
+                context.moveTo(coords[0].x, coords[0].y);
+
+                for (var i = 1; i < coords.length; i++) {
+                    context.lineTo(coords[i].x, coords[i].y);
+                }
+
+                context.strokeStyle = 'green';
+                context.stroke();
+            }
+
+            // Calculated lines:
+            if (drawCalculatedLines) {
+                for (var i = 1; i < coords.length; i++) {
+                    var a = coords[i - 1];
+                    var b = coords[i];
+
+                    for (var x = a.x; x <= b.x; x++) {
+                        var y = calcY(a.x, a.y, b.x, b.y, x);
+
+                        context.fillStyle = 'red';
+                        context.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+
+            // Rect physics:
+            if (rect.jumping) rect.y -= rect.jumpForce;
+            if (rect.movingLeft) rect.x -= rect.speed;
+            if (rect.movingRight) rect.x += rect.speed;
+
+            for (var i = 1; i < coords.length; i++) {
+                var a = coords[i - 1];
+                var b = coords[i];
+
+                if (rect.x >= a.x && rect.x <= b.x) {
+                    var groundY = calcY(a.x, a.y, b.x, b.y, rect.x);
+                    rect.y += rect.gravity;
+
+                    if (rect.y > groundY) {
+                        rect.y = groundY;
+                    }
+
+                    break;
+                }
+            }
+
+            // Rect:
+            var rectDrawingX = rect.x - Math.round(rect.size / 2);
+            var rectDrawingY = rect.y - rect.size;
+
+            context.fillStyle = rect.color;
+            context.fillRect(rectDrawingX, rectDrawingY, rect.size, rect.size);
+
+            requestAnimationFrame(update);
+        }
+
+        update();
+
+        window.onkeydown = function (e) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    rect.jumping = true;
+                    break;
+                case 'ArrowLeft':
+                    rect.movingLeft = true;
+                    break;
+                case 'ArrowRight':
+                    rect.movingRight = true;
+                    break;
+            }
+        }
+
+        window.onkeyup = function (e) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    rect.jumping = false;
+                    break;
+                case 'ArrowLeft':
+                    rect.movingLeft = false;
+                    break;
+                case 'ArrowRight':
+                    rect.movingRight = false;
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
